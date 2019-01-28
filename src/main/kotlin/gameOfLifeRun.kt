@@ -16,10 +16,15 @@ import javafx.util.Duration
 
 
 fun main(args: Array<String>) {
-    val size = 5000
-    val gameOfLife = GameOfLife(size,size,null)
-    gameOfLife.generateMatrix()
-    gameOfLife.runGameOfLifeThreads(true)
+    val useGUI = false
+    if (useGUI) {
+        Application.launch(Main::class.java,*args)
+    } else {
+        val size = 5000
+        val gameOfLife = GameOfLife(size, size, null, 6)
+        gameOfLife.generateMatrix(0.5)
+        gameOfLife.runGameOfLifeThreads(true)
+    }
 }
 
 class Main : Application() {
@@ -63,9 +68,9 @@ class Main : Application() {
 
         val rectSize = Bindings.min(root.heightProperty().divide(gridY), root.widthProperty().divide(gridX))
 
-        for (x in 0..gridX){
+        for (x in 0 until gridX){
             grid.add(mutableListOf())
-            for (y in 0..gridY){
+            for (y in 0 until gridY){
                 val rectangle = Rectangle(recSize,recSize)
                 rectangle.strokeWidth = 0.0
                 rectangle.fill = Color.RED
@@ -89,8 +94,8 @@ class Main : Application() {
 
         primaryStage?.scene = scene
         primaryStage?.show()
-        gameOfLife = GameOfLife(gridX,gridY,grid)
-        gameOfLife?.generateMatrix()
+        gameOfLife = GameOfLife(gridX,gridY,grid,6)
+        gameOfLife?.generateMatrix(0.5)
 
     }
 

@@ -2,14 +2,16 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import kotlin.random.Random
 
-class GameOfLife(val width: Int, val height: Int, val output: MutableList<MutableList<Rectangle>>?, val threadNum: Int) {
-
+// treeprob = 0.05
+// burnprob = 0.001
+class ForestFire(val width: Int, val height: Int, val output: MutableList<MutableList<Rectangle>>?, val threadNum: Int, val burnProb: Double, val treeProb: Double) {
     private val empty = 0
-    private val full = 1
+    private val tree = 1
+    private val burning = 2
     private var matrix = mutableListOf<MutableList<Int>>()
 
     /**
-     * Generates initial game of life matrix with provided probability that a cell will be alive
+     * Generates initial forest fire matrix with provided probability that a cell will be a tree
      */
     fun generateMatrix(probability: Double){
         for (i in 0 until height){
@@ -17,7 +19,7 @@ class GameOfLife(val width: Int, val height: Int, val output: MutableList<Mutabl
             for (j in 0 until width){
                 val rnd = Random.nextDouble()
                 if (rnd < probability) {
-                    matrix[i].add(full)
+                    matrix[i].add(tree)
                 } else {
                     matrix[i].add(empty)
                 }
@@ -40,56 +42,28 @@ class GameOfLife(val width: Int, val height: Int, val output: MutableList<Mutabl
      */
     private fun getNewCellState(cell: Int, neighCount: Int): Int{
         if(cell == empty){
-            if (neighCount == 3){
-                return full
+            val rnd = Random.nextDouble()
+            if (rnd < treeProb){
+                return tree
             } else {
                 return empty
             }
+
+        } else if (cell == tree){
+            if (neighCount >= 1){
+                return burning
+            }
+            val rnd = Random.nextDouble()
+            if (rnd < burnProb){
+                return burning
+            }
+            return tree
         } else {
-            if (neighCount == 2||neighCount == 3){
-                return full
-            }
-            else {
-                return empty
-            }
+            return empty
         }
     }
 
-    fun runGameOfLifeSerial(infinity: Boolean){
-        do {
-            val start = System.currentTimeMillis()
-            val newMatrix = MutableList(height){ MutableList(width){0}}
-            for ((index, row) in matrix.withIndex()) {
-                for ((jIndex, column) in row.withIndex()) {
-                    var neighCount = 0
-                    var i = index - 1
-                    var j = jIndex - 1
-                    for (x in 0 until 3) {
-
-                        if (isOutOfBounds(i + x, height)) {
-                            continue
-                        }
-                        for (y in 0 until 3) {
-                            if (x==1 && y == 1) {
-                                continue
-                            }
-                            if (isOutOfBounds(j + y, width)) {
-                                continue
-                            }
-                            neighCount += matrix[i + x][j + y]
-                        }
-                    }
-                    //println(neighCount)
-                    newMatrix[index][jIndex] = getNewCellState(matrix[index][jIndex], neighCount)
-                }
-            }
-            matrix = newMatrix
-            drawPopulation()
-            println("Elapsed" + (System.currentTimeMillis() - start))
-        }while (infinity)
-    }
-
-    fun runGameOfLifeThreads(infinity:Boolean){
+    fun runForestFireThreads(infinity:Boolean){
         var start = System.currentTimeMillis()
         val threads = mutableListOf<Thread>()
         do {
@@ -123,7 +97,7 @@ class GameOfLife(val width: Int, val height: Int, val output: MutableList<Mutabl
                                     if (isOutOfBounds(j + y, width)) {
                                         continue
                                     }
-                                    neighCount += matrix[i + x][j + y]
+                                    neighCount += if (matrix[i + x][j + y] == burning) 1 else 0
                                 }
                             }
                             newMatrix[baseI][baseJ] = getNewCellState(matrix[baseI][baseJ], neighCount)
@@ -142,15 +116,14 @@ class GameOfLife(val width: Int, val height: Int, val output: MutableList<Mutabl
         }while (infinity)
     }
 
-    /**
-     * Draws population into prepared grid if GUI is available
-     */
     private fun drawPopulation(){
         if (output != null) {
             for ((i, row) in matrix.withIndex()) {
                 for ((j, col) in row.withIndex()) {
-                    if (col == full) {
-                        output[i][j].fill = Color.BLACK
+                    if (col == tree) {
+                        output[i][j].fill = Color.GREEN
+                    } else if (col==burning){
+                        output[i][j].fill = Color.ORANGE
                     } else {
                         output[i][j].fill = Color.WHITE
                     }

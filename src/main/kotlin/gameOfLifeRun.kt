@@ -17,20 +17,29 @@ import javafx.util.Duration
 
 fun main(args: Array<String>) {
     val useGUI = false
+    val testGameOfLife = false
     if (useGUI) {
         Application.launch(Main::class.java,*args)
     } else {
         val size = 5000
+        if (testGameOfLife){
         val gameOfLife = GameOfLife(size, size, null, 6)
         gameOfLife.generateMatrix(0.5)
-        gameOfLife.runGameOfLifeThreads(true)
+        gameOfLife.runGameOfLifeThreads(true)}
+        else{
+            val forestFire = ForestFire(size, size, null, 6,0.001,0.05)
+            forestFire.generateMatrix(0.8)
+            forestFire.runForestFireThreads(true)
+        }
     }
 }
 
 class Main : Application() {
 
     var gameOfLife: GameOfLife? = null
+    var forestFire: ForestFire? = null
     var action: Timeline? = null
+    var actionFF: Timeline? = null
 
     override fun start(primaryStage: Stage?) {
         val size = 100
@@ -40,21 +49,40 @@ class Main : Application() {
         val grid = mutableListOf<MutableList<Rectangle>>()
 
         val basePane = AnchorPane()
-        val btnStart = Button("Start game")
-        basePane.children.add(btnStart)
-        AnchorPane.setTopAnchor(btnStart, 1.0)
-        AnchorPane.setLeftAnchor(btnStart, 1.0)
-        AnchorPane.setRightAnchor(btnStart, 1.0)
+        val btnStartGol = Button("Start game of life")
+        val btnStartFF = Button("Start Forest Fire")
+        basePane.children.add(btnStartGol)
+        AnchorPane.setTopAnchor(btnStartGol, 1.0)
+        AnchorPane.setLeftAnchor(btnStartGol, 1.0)
+        AnchorPane.setRightAnchor(btnStartGol, 1.0)
+        basePane.children.add(btnStartFF)
+        AnchorPane.setTopAnchor(btnStartFF, 30.0)
+        AnchorPane.setLeftAnchor(btnStartFF, 1.0)
+        AnchorPane.setRightAnchor(btnStartFF, 1.0)
 
-        btnStart.onAction = object : EventHandler<ActionEvent> {
+
+        btnStartGol.onAction = object : EventHandler<ActionEvent> {
 
             override fun handle(event: ActionEvent) {
                 if (action?.status == Animation.Status.RUNNING) {
                     action?.stop()
-                    btnStart.text = "Start game"
+                    btnStartGol.text = "Start game of life"
                 }else {
                     action?.play()
-                    btnStart.text = "Stop game"
+                    btnStartGol.text = "Stop game of life"
+                }
+            }
+        }
+
+        btnStartFF.onAction = object : EventHandler<ActionEvent> {
+
+            override fun handle(event: ActionEvent) {
+                if (actionFF?.status == Animation.Status.RUNNING) {
+                    actionFF?.stop()
+                    btnStartFF.text = "Start Forest Fire"
+                }else {
+                    actionFF?.play()
+                    btnStartFF.text = "Stop Forest Fire"
                 }
             }
         }
@@ -64,7 +92,7 @@ class Main : Application() {
         AnchorPane.setBottomAnchor(root,1.0)
         AnchorPane.setLeftAnchor(root,1.0)
         AnchorPane.setRightAnchor(root,1.0)
-        AnchorPane.setTopAnchor(root,30.0)
+        AnchorPane.setTopAnchor(root,60.0)
 
         val rectSize = Bindings.min(root.heightProperty().divide(gridY), root.widthProperty().divide(gridX))
 
@@ -92,10 +120,20 @@ class Main : Application() {
 
         action?.cycleCount = Timeline.INDEFINITE
 
+        actionFF = Timeline(KeyFrame(Duration.millis(100.0), object : EventHandler<ActionEvent> {
+            override fun handle(event: ActionEvent) {
+                forestFire?.runForestFireThreads(false)
+            }
+        }))
+
+        actionFF?.cycleCount = Timeline.INDEFINITE
+
         primaryStage?.scene = scene
         primaryStage?.show()
         gameOfLife = GameOfLife(gridX,gridY,grid,6)
         gameOfLife?.generateMatrix(0.5)
+        forestFire = ForestFire(gridX, gridY, grid,6,0.001,0.05)
+        forestFire?.generateMatrix(0.8)
 
     }
 
